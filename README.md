@@ -39,12 +39,12 @@ Vul in:
 Test eerst lokaal:
 ```bash
 python3 app.py
-# luistert op http://0.0.0.0:5000
+# luistert op http://0.0.0.0:9988
 ```
 
 Voor productie, draai via gunicorn:
 ```bash
-gunicorn -w 2 -b 127.0.0.1:5000 app:app
+gunicorn -w 2 -b 127.0.0.1:9988 app:app
 ```
 
 Zet er een systemd-service omheen zodat hij blijft draaien na een reboot
@@ -57,7 +57,7 @@ After=network.target
 [Service]
 WorkingDirectory=/opt/vice-amsterdam
 Environment="PATH=/opt/vice-amsterdam/venv/bin"
-ExecStart=/opt/vice-amsterdam/venv/bin/gunicorn -w 2 -b 127.0.0.1:5000 app:app
+ExecStart=/opt/vice-amsterdam/venv/bin/gunicorn -w 2 -b 127.0.0.1:9988 app:app
 Restart=always
 
 [Install]
@@ -67,14 +67,14 @@ WantedBy=multi-user.target
 sudo systemctl enable --now vice-amsterdam
 ```
 
-En een nginx reverse proxy zodat `api.abelsoftware123.com` naar poort 5000
+En een nginx reverse proxy zodat `amsterdam.abelsoftware123.com` naar poort 9988
 wijst, met HTTPS (bv. via certbot/Let's Encrypt — Stripe webhooks *vereisen*
 HTTPS):
 ```nginx
 server {
-    server_name api.abelsoftware123.com;
+    server_name amsterdam.abelsoftware123.com;
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:9988;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -84,7 +84,7 @@ server {
 ## 4. Stripe webhook instellen
 
 1. Ga naar Stripe Dashboard → Developers → Webhooks → "Add endpoint"
-2. URL: `https://api.abelsoftware123.com/api/webhook`
+2. URL: `https://amsterdam.abelsoftware123.com/api/webhook`
 3. Event om te selecteren: `checkout.session.completed`
 4. Na aanmaken zie je de **signing secret** (whsec_...) — zet die in `.env`
    als `STRIPE_WEBHOOK_SECRET` en herstart de service.
@@ -100,7 +100,7 @@ stripe trigger checkout.session.completed
 In `index.html` staat:
 ```html
 <script>
-  window.VICE_AMSTERDAM_API_BASE = "https://api.abelsoftware123.com";
+  window.VICE_AMSTERDAM_API_BASE = "https://amsterdam.abelsoftware123.com";
 </script>
 ```
 Zet dit op de juiste URL van je backend.
